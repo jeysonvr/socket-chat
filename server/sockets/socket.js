@@ -15,24 +15,26 @@ io.on('connection', (client) => {
             });
         }
 
-        client.join( usuario.sala );
+        client.join(usuario.sala);
 
         let userList = usuarios.agregarPersona(client.id, usuario.nombre, usuario.sala);
-        client.broadcast.to( usuario.sala ).emit('entrarChat', usuarios.getPersonasPorSala(usuario.sala));
+        client.broadcast.to(usuario.sala).emit('entrarChat', usuarios.getPersonasPorSala(usuario.sala));
 
-        client.broadcast.to( usuario.sala ).emit('crearMensaje', {
-            usuario: 'Administrador',
-            mensaje: `${ usuario.nombre } se ha unido al chat`
-        });
+        client.broadcast.to(usuario.sala).emit('crearMensaje', crearMensaje('Administrador', `${ usuario.nombre } se ha unido al chat`));
+
+        let personasEnSala = usuarios.getPersonasPorSala(usuario.sala);
+
+        callback(personasEnSala);
+
     });
 
-    client.on('crearMensaje', (data) => {
+    client.on('crearMensaje', (data, callback) => {
 
         let usuario = usuarios.getPersona(client.id);
         let mensaje = crearMensaje(usuario.nombre, data.mensaje);
 
-        client.broadcast.to(usuario.data).emit('crearMensaje', mensaje);
-
+        client.broadcast.to(usuario.sala).emit('crearMensaje', mensaje);
+        callback(mensaje);
     });
 
     client.on('mensajePrivado', (data) => {
@@ -45,8 +47,8 @@ io.on('connection', (client) => {
     client.on('disconnect', () => {
         let personaBorrada = usuarios.borrarPersona(client.id);
 
-        client.broadcast.to( personaBorrada.sala ).emit('crearMensaje', crearMensaje('Administrador', `${ personaBorrada.nombre } salio`));
-        client.broadcast.to( personaBorrada.sala ).emit('listaPersonas', usuarios.getPersonasPorSala(personaBorrada.sala));
+        client.broadcast.to(personaBorrada.sala).emit('crearMensaje', crearMensaje('Administrador', `${ personaBorrada.nombre } salio`));
+        client.broadcast.to(personaBorrada.sala).emit('listaPersonas', usuarios.getPersonasPorSala(personaBorrada.sala));
     });
 
 });
